@@ -3,6 +3,7 @@ package com.cursorcoin.data.di
 import android.content.Context
 import androidx.room.Room
 import com.cursorcoin.data.local.AppDatabase
+import com.cursorcoin.data.local.dao.CoinDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,4 +24,8 @@ object DatabaseModule {
         AppDatabase::class.java,
         "cursor_coin_db"
     ).build()
+
+    @Provides
+    @Singleton
+    fun provideCoinDao(database: AppDatabase): CoinDao = database.coinDao()
 } 

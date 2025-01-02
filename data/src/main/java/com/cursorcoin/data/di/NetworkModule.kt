@@ -1,5 +1,6 @@
 package com.cursorcoin.data.di
 
+import com.cursorcoin.data.remote.api.CoinGeckoApi
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -16,6 +17,8 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+
+    private const val BASE_URL = "https://api.coingecko.com/api/"
 
     @Provides
     @Singleton
@@ -47,8 +50,13 @@ object NetworkModule {
         okHttpClient: OkHttpClient
     ): Retrofit =
         Retrofit.Builder()
-            .baseUrl("https://api.example.com/") // Replace with your API base URL
+            .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
+
+    @Provides
+    @Singleton
+    fun provideCoinGeckoApi(retrofit: Retrofit): CoinGeckoApi =
+        retrofit.create(CoinGeckoApi::class.java)
 } 

@@ -6,7 +6,7 @@ buildscript {
     }
     dependencies {
         classpath("com.android.tools.build:gradle:8.2.0")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.23")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.25")
         classpath("com.google.dagger:hilt-android-gradle-plugin:2.47")
     }
 }
@@ -14,7 +14,7 @@ buildscript {
 plugins {
     id("com.android.application") version "8.3.2" apply false
     id("com.android.library") version "8.3.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.23" apply false
+    id("org.jetbrains.kotlin.android") version "1.9.25" apply false
     id("com.google.dagger.hilt.android") version "2.47" apply false
 }
 
