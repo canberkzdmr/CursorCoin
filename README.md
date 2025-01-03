@@ -26,9 +26,13 @@ CursorCoin is a modern Android cryptocurrency tracking application built with Ko
 ## Project Structure 📁
 
 app/
+
 ├── data/ # Data layer: repositories, data sources
+
 ├── domain/ # Domain layer: use cases, models
+
 ├── presentation/ # UI layer: views, view models
+
 └── di/ # Dependency injection modules
 
 ## Getting Started 🚀
