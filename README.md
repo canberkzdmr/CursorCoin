@@ -74,13 +74,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [CoinGecko API](https://www.coingecko.com/en/api) for cryptocurrency data
 - [Material Design](https://material.io/design) for UI guidelines
-- All contributors who help to make this project better
 
 ## Contact 📧
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
+can berk ozdemir -  canberkozdemirr@gmail.com
 
-Project Link: [https://github.com/yourusername/cursorcoin](https://github.com/yourusername/cursorcoin)
+Project Link: [https://github.com/yourusername/cursorcoin](https://github.com/canberkzdmr/cursorcoin)
 
 ---
-⭐️ Star us on GitHub — it helps!
