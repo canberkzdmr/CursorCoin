@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CoinDao {
+    // Coin operations
     @Query("SELECT * FROM coins ORDER BY marketCapRank ASC")
     fun getAllCoins(): Flow<List<CoinEntity>>
 
@@ -22,14 +23,15 @@ interface CoinDao {
     @Query("SELECT MAX(lastUpdated) FROM coins")
     suspend fun getLastUpdateTime(): Long?
 
-    @Query("SELECT * FROM coin_history WHERE coinId = :coinId ORDER BY timestamp ASC")
-    fun getCoinHistory(coinId: String): Flow<List<CoinHistoryEntity>>
-
+    // Historical data operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCoinHistory(history: List<CoinHistoryEntity>)
 
+    @Query("SELECT * FROM coin_history WHERE coinId = :coinId ORDER BY timestamp ASC")
+    fun getCoinHistory(coinId: String): Flow<List<CoinHistoryEntity>>
+
     @Query("SELECT MAX(lastUpdated) FROM coin_history WHERE coinId = :coinId")
-    suspend fun getHistoryLastUpdateTime(coinId: String): Long?
+    suspend fun getLastHistoryUpdateTime(coinId: String): Long?
 
     @Query("DELETE FROM coin_history WHERE coinId = :coinId")
     suspend fun deleteCoinHistory(coinId: String)

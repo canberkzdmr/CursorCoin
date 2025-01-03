@@ -16,6 +16,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.cursorcoin.domain.model.CoinDetail
+import com.cursorcoin.presentation.components.LineChart
 import java.text.NumberFormat
 import java.util.*
 
@@ -98,6 +99,24 @@ fun CoinDetailScreen(
 
                         // Price information
                         PriceSection(coin)
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Price History Chart
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                        ) {
+                            LineChart(
+                                data = state.priceHistory.map { 
+                                    Pair(it.timestamp, it.price.toFloat())
+                                },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(24.dp))
 

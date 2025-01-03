@@ -1,9 +1,9 @@
 package com.cursorcoin.data.repository
 
+import com.cursorcoin.data.local.AppSettings
 import com.cursorcoin.data.local.dao.CoinDao
 import com.cursorcoin.data.local.entity.CoinEntity
 import com.cursorcoin.data.local.entity.CoinHistoryEntity
-import com.cursorcoin.data.local.preferences.SettingsPreferences
 import com.cursorcoin.data.remote.api.CoinGeckoApi
 import com.cursorcoin.data.remote.model.CoinDetailDto
 import com.cursorcoin.data.remote.model.CoinDto
@@ -19,7 +19,7 @@ import javax.inject.Inject
 class CoinRepositoryImpl @Inject constructor(
     private val api: CoinGeckoApi,
     private val dao: CoinDao,
-    private val preferences: SettingsPreferences
+    private val settings: AppSettings
 ) : CoinRepository {
 
     override fun getCoins(): Flow<List<Coin>> =
@@ -48,40 +48,35 @@ class CoinRepositoryImpl @Inject constructor(
 
     override fun getCoinHistory(coinId: String): Flow<List<CoinHistory>> =
         dao.getCoinHistory(coinId).map { entities ->
-            entities.map { it.toDomain() }
+            entities.map { CoinHistory(it.timestamp, it.price) }
         }
 
     override suspend fun refreshCoinHistory(coinId: String) {
         try {
-            val history = api.getCoinMarketChart(
-                coinId,
-                days = "30",
-                interval = "daily"
-            ).prices.map { (timestamp, price) ->
+            val marketChart = api.getCoinMarketChart(coinId)
+            val history = marketChart.prices.map { (timestamp, price) ->
                 CoinHistoryEntity(
-                    id = "${coinId}_${timestamp}",
                     coinId = coinId,
-                    timestamp = timestamp,
+                    timestamp = timestamp.toLong(),
                     price = price
                 )
             }
-            dao.deleteCoinHistory(coinId)
             dao.insertCoinHistory(history)
         } catch (e: Exception) {
             throw e
         }
     }
 
-    override suspend fun shouldRefreshHistory(coinId: String): Boolean {
-        val lastUpdateTime = dao.getHistoryLastUpdateTime(coinId) ?: 0L
+    override suspend fun shouldRefreshCoinHistory(coinId: String): Boolean {
+        val lastUpdateTime = dao.getLastHistoryUpdateTime(coinId) ?: 0L
         val currentTime = System.currentTimeMillis()
-        return currentTime - lastUpdateTime > TimeUnit.HOURS.toMillis(1)
+        return currentTime - lastUpdateTime > TimeUnit.MINUTES.toMillis(15)
     }
 
-    override fun getUseLocalData(): Flow<Boolean> = preferences.useLocalData
+    override fun getUseLocalData(): Flow<Boolean> = settings.useLocalData
 
     override suspend fun setUseLocalData(useLocal: Boolean) {
-        preferences.setUseLocalData(useLocal)
+        settings.setUseLocalData(useLocal)
     }
 
     private fun CoinDto.toEntity() = CoinEntity(

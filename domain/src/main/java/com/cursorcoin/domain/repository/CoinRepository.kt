@@ -12,7 +12,7 @@ interface CoinRepository {
     suspend fun getCoinById(coinId: String): CoinDetail
     fun getCoinHistory(coinId: String): Flow<List<CoinHistory>>
     suspend fun refreshCoinHistory(coinId: String)
-    suspend fun shouldRefreshHistory(coinId: String): Boolean
+    suspend fun shouldRefreshCoinHistory(coinId: String): Boolean
     fun getUseLocalData(): Flow<Boolean>
     suspend fun setUseLocalData(useLocal: Boolean)
 } 

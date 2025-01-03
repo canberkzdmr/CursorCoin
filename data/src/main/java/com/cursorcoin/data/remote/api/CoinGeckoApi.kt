@@ -32,7 +32,7 @@ interface CoinGeckoApi {
     suspend fun getCoinMarketChart(
         @Path("id") coinId: String,
         @Query("vs_currency") currency: String = "usd",
-        @Query("days") days: String,
-        @Query("interval") interval: String
+        @Query("days") days: Int = 30,
+        @Query("interval") interval: String = "daily"
     ): MarketChartDto
 } 

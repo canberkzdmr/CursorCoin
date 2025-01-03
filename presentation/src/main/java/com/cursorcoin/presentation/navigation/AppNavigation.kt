@@ -10,6 +10,7 @@ import androidx.navigation.navArgument
 import com.cursorcoin.presentation.screens.coindetail.CoinDetailScreen
 import com.cursorcoin.presentation.screens.coins.CoinsScreen
 import com.cursorcoin.presentation.screens.home.HomeScreen
+import com.cursorcoin.presentation.screens.settings.SettingsScreen
 
 @Composable
 fun AppNavigation(
@@ -24,6 +25,9 @@ fun AppNavigation(
         }
         composable(Screen.Coins.route) {
             CoinsScreen(navController)
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(navController)
         }
         composable(
             route = Screen.CoinDetail.route,

@@ -1,4 +1,4 @@
-package com.cursorcoin.data.local.preferences
+package com.cursorcoin.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 @Singleton
-class SettingsPreferences @Inject constructor(
+class AppSettings @Inject constructor(
     private val context: Context
 ) {
     private val useLocalDataKey = booleanPreferencesKey("use_local_data")

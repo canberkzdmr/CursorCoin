@@ -23,7 +23,9 @@ object DatabaseModule {
         context,
         AppDatabase::class.java,
         "cursor_coin_db"
-    ).build()
+    )
+        .fallbackToDestructiveMigration()
+        .build()
 
     @Provides
     @Singleton

@@ -19,6 +19,8 @@ import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import java.text.NumberFormat
 import java.util.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +38,15 @@ fun CoinsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "CursorCoin") }
+                title = { Text(text = "CursorCoin") },
+                actions = {
+                    IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings"
+                        )
+                    }
+                }
             )
         }
     ) { paddingValues ->
