@@ -1,9 +1,9 @@
 package com.cursorcoin.presentation.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -30,9 +30,9 @@ fun BottomNavBar(
             icon = Icons.Default.Lock
         ),
         NavigationItem(
-            name = "Settings",
-            route = Screen.Settings.route,
-            icon = Icons.Default.Settings
+            name = "Market",
+            route = Screen.MarketAnalysis.route,
+            icon = Icons.Default.DateRange
         )
     )
 

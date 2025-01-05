@@ -9,6 +9,7 @@ import com.cursorcoin.presentation.screens.coindetail.CoinDetailScreen
 import com.cursorcoin.presentation.screens.coins.CoinsScreen
 import com.cursorcoin.presentation.screens.portfolio.PortfolioScreen
 import com.cursorcoin.presentation.screens.settings.SettingsScreen
+import com.cursorcoin.presentation.screens.market.MarketAnalysisScreen
 
 @Composable
 fun AppNavigation(
@@ -37,6 +38,9 @@ fun AppNavigation(
         }
         composable(Screen.Settings.route) {
             SettingsScreen()
+        }
+        composable(Screen.MarketAnalysis.route) {
+            MarketAnalysisScreen()
         }
         composable(Screen.CoinDetail.route) { backStackEntry ->
             val coinId = backStackEntry.arguments?.getString("coinId") ?: return@composable

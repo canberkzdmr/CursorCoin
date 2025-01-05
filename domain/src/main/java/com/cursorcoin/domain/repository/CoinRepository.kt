@@ -3,6 +3,7 @@ package com.cursorcoin.domain.repository
 import com.cursorcoin.domain.model.Coin
 import com.cursorcoin.domain.model.CoinDetail
 import com.cursorcoin.domain.model.CoinHistory
+import com.cursorcoin.domain.model.MarketData
 import kotlinx.coroutines.flow.Flow
 
 interface CoinRepository {
@@ -15,4 +16,5 @@ interface CoinRepository {
     suspend fun shouldRefreshCoinHistory(coinId: String): Boolean
     fun getUseLocalData(): Flow<Boolean>
     suspend fun setUseLocalData(useLocal: Boolean)
+    suspend fun getMarketData(): MarketData
 } 

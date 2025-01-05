@@ -1,7 +1,9 @@
 package com.cursorcoin.data.remote.api
 
+import com.cursorcoin.data.remote.model.MarketDataDto
 import com.cursorcoin.data.remote.dto.CoinDto
 import com.cursorcoin.data.remote.dto.CoinHistoryDto
+import com.cursorcoin.data.remote.model.GlobalMarketDataResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -35,4 +37,7 @@ interface CoinGeckoApi {
         @Query("days") days: Int = 30,
         @Query("interval") interval: String = "daily"
     ): CoinHistoryDto
+
+    @GET("global")
+    suspend fun getGlobalMarketData(): GlobalMarketDataResponse
 } 

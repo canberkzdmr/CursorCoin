@@ -12,6 +12,7 @@ import com.cursorcoin.data.remote.dto.toCoinHistory
 import com.cursorcoin.domain.model.Coin
 import com.cursorcoin.domain.model.CoinDetail
 import com.cursorcoin.domain.model.CoinHistory
+import com.cursorcoin.domain.model.MarketData
 import com.cursorcoin.domain.repository.CoinRepository
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -145,6 +146,10 @@ class CoinRepositoryImpl @Inject constructor(
 
     override suspend fun setUseLocalData(useLocal: Boolean) {
         settings.setUseLocalData(useLocal)
+    }
+
+    override suspend fun getMarketData(): MarketData {
+        return api.getGlobalMarketData().data.toMarketData()
     }
 
     companion object {
