@@ -1,12 +1,14 @@
 package com.cursorcoin.presentation.screens.portfolio
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
@@ -87,7 +89,8 @@ fun AddCoinDialog(
                         value = amount,
                         onValueChange = { amount = it },
                         label = { Text("Amount") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
 
                     // Price Input (prefilled with current price)
@@ -95,7 +98,8 @@ fun AddCoinDialog(
                         value = price.ifEmpty { selectedCoinInfo.currentPrice.toString() },
                         onValueChange = { price = it },
                         label = { Text("Purchase Price (USD)") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
                 }
             },

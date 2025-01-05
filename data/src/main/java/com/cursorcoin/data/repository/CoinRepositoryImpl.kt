@@ -13,6 +13,7 @@ import com.cursorcoin.domain.model.Coin
 import com.cursorcoin.domain.model.CoinDetail
 import com.cursorcoin.domain.model.CoinHistory
 import com.cursorcoin.domain.model.MarketData
+import com.cursorcoin.domain.model.TopCoin
 import com.cursorcoin.domain.repository.CoinRepository
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -149,7 +150,54 @@ class CoinRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMarketData(): MarketData {
-        return api.getGlobalMarketData().data.toMarketData()
+        // Fetch global market data
+        val globalData = api.getGlobalMarketData().data
+
+        // Fetch top coins data
+        val topCoinsData = api.getCoins(
+            perPage = 10,
+            sparkline = false,
+            priceChangePercentage = "24h,30d"
+        )
+
+        // Create map of coin dominance percentages
+        val marketCapPercentages = globalData.marketCapPercentage
+
+        // Create TopCoin objects with combined data
+        val topCoins = topCoinsData.map { coinDto ->
+            TopCoin(
+                id = coinDto.id,
+                symbol = coinDto.symbol,
+                name = coinDto.name,
+                image = coinDto.image,
+                currentPrice = coinDto.currentPrice,
+                marketCap = coinDto.marketCap.toDouble(),
+                marketCapRank = coinDto.marketCapRank,
+                volume24h = coinDto.totalVolume,
+                percentageChange24h = coinDto.priceChangePercentage24h ?: 0.0,
+                percentageChange7d = null, // Not available in current response
+                percentageChange30d = coinDto.priceChangePercentage30d,
+                circulatingSupply = coinDto.circulatingSupply,
+                totalSupply = coinDto.totalSupply,
+                dominancePercentage = marketCapPercentages[coinDto.symbol.lowercase()] ?: 0.0
+            )
+        }
+
+        return MarketData(
+            totalMarketCap = globalData.totalMarketCap["usd"] ?: 0.0,
+            totalVolume = globalData.totalVolume["usd"] ?: 0.0,
+            btcDominance = globalData.marketCapPercentage["btc"] ?: 0.0,
+            marketCapPercentageChange24h = globalData.marketCapChangePercentage24h,
+            timestamp = globalData.updatedAt,
+            activeCryptocurrencies = globalData.activeCryptocurrencies,
+            markets = globalData.markets,
+            topCoinsDominance = globalData.marketCapPercentage,
+            marketCapByCurrency = globalData.totalMarketCap,
+            volumeByCurrency = globalData.totalVolume,
+            defiMarketCap = globalData.defiMarketCap,
+            defiDominance = globalData.defiDominance,
+            topCoins = topCoins
+        )
     }
 
     companion object {
