@@ -1,44 +1,49 @@
 package com.cursorcoin.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.cursorcoin.presentation.screens.coindetail.CoinDetailScreen
 import com.cursorcoin.presentation.screens.coins.CoinsScreen
-import com.cursorcoin.presentation.screens.home.HomeScreen
+import com.cursorcoin.presentation.screens.portfolio.PortfolioScreen
 import com.cursorcoin.presentation.screens.settings.SettingsScreen
 
 @Composable
 fun AppNavigation(
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController,
+    startDestination: String = Screen.CoinList.route,
+    modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Coins.route
+        startDestination = startDestination,
+        modifier = modifier
     ) {
-        composable(Screen.Home.route) {
-            HomeScreen(navController)
+        composable(Screen.CoinList.route) {
+            CoinsScreen(
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToDetail = { coinId ->
+                    navController.navigate(Screen.CoinDetail.createRoute(coinId))
+                },
+                navController = navController
+            )
         }
-        composable(Screen.Coins.route) {
-            CoinsScreen(navController)
+        composable(Screen.Portfolio.route) {
+            PortfolioScreen(navController = navController)
         }
         composable(Screen.Settings.route) {
-            SettingsScreen(navController)
+            SettingsScreen()
         }
-        composable(
-            route = Screen.CoinDetail.route,
-            arguments = listOf(
-                navArgument("coinId") {
-                    type = NavType.StringType
-                }
-            )
-        ) { backStackEntry ->
+        composable(Screen.CoinDetail.route) { backStackEntry ->
             val coinId = backStackEntry.arguments?.getString("coinId") ?: return@composable
-            CoinDetailScreen(navController, coinId)
+            CoinDetailScreen(
+                navController = navController,
+                coinId = coinId
+            )
         }
     }
 } 

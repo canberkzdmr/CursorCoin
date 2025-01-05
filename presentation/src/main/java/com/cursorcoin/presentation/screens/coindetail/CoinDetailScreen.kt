@@ -10,12 +10,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.cursorcoin.domain.model.CoinDetail
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
 import com.cursorcoin.presentation.components.LineChart
 import java.text.NumberFormat
 import java.util.*
@@ -29,16 +31,16 @@ fun CoinDetailScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(key1 = coinId) {
+    LaunchedEffect(coinId) {
         viewModel.handleEvent(CoinDetailEvent.LoadCoinDetail(coinId))
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = state.coinDetail?.name ?: "Loading...") },
+                title = { Text(state.coinDetail?.name ?: "") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -50,30 +52,31 @@ fun CoinDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when {
-                state.isLoading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                state.error != null -> {
-                    Text(
-                        text = state.error ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-                state.coinDetail != null -> {
-                    val coin = state.coinDetail!!
+            if (state.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (state.error != null) {
+                Text(
+                    text = state.error?.let { "Error: $it" } ?: "Unknown error",
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .align(Alignment.Center)
+                )
+            } else {
+                state.coinDetail?.let { coin ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
                             .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Header with image and basic info
+                        // Coin Header
                         Row(
                             modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             AsyncImage(
@@ -81,7 +84,6 @@ fun CoinDetailScreen(
                                 contentDescription = coin.name,
                                 modifier = Modifier.size(64.dp)
                             )
-                            Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text(
                                     text = coin.name,
@@ -89,50 +91,172 @@ fun CoinDetailScreen(
                                 )
                                 Text(
                                     text = coin.symbol.uppercase(),
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Price information
-                        PriceSection(coin)
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Price History Chart
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp)
-                        ) {
-                            LineChart(
-                                data = state.priceHistory.map { 
-                                    Pair(it.timestamp, it.price.toFloat())
-                                },
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp)
-                            )
+                        // Price Info
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Current Price",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = formatPrice(coin.currentPrice),
+                                    style = MaterialTheme.typography.headlineMedium
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "24h Change",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = formatPercentage(coin.priceChangePercentage24h),
+                                            color = getPercentageColor(coin.priceChangePercentage24h)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "30d Change",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(
+                                            text = formatPercentage(coin.priceChangePercentage30d),
+                                            color = getPercentageColor(coin.priceChangePercentage30d)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                        // Price Chart
+                        if (state.priceHistory.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                            ) {
+                                val entries = state.priceHistory
+                                    .sortedBy { it.timestamp }
+                                    .mapIndexed { index, history ->
+                                        Entry(index.toFloat(), history.price.toFloat())
+                                    }
 
-                        // Market data
-                        MarketDataSection(coin)
+                                if (entries.isNotEmpty()) {
+                                    val dataSet = LineDataSet(entries, "Price").apply {
+                                        color = android.graphics.Color.BLUE
+                                        setDrawCircles(false)
+                                        setDrawValues(false)
+                                        mode = LineDataSet.Mode.CUBIC_BEZIER
+                                        lineWidth = 2f
+                                        setDrawFilled(true)
+                                        fillColor = android.graphics.Color.BLUE
+                                        fillAlpha = 30
+                                    }
 
-                        Spacer(modifier = Modifier.height(24.dp))
+                                    LineChart(
+                                        lineData = LineData(dataSet),
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(8.dp)
+                                    )
+                                }
+                            }
+                        }
 
-                        // Description
-                        Text(
-                            text = "About",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = coin.description)
+                        // Market Info
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Market Info",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Market Cap",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(text = formatPrice(coin.marketCap.toDouble()))
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "Volume",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(text = formatPrice(coin.totalVolume))
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "24h High",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(text = formatPrice(coin.high24h))
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "24h Low",
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                        Text(text = formatPrice(coin.low24h))
+                                    }
+                                }
+
+                                // Supply Information
+                                SupplyInfoRow(
+                                    label = "Circulating Supply",
+                                    value = coin.circulatingSupply
+                                )
+                                SupplyInfoRow(
+                                    label = "Total Supply",
+                                    value = coin.totalSupply
+                                )
+                                SupplyInfoRow(
+                                    label = "Max Supply",
+                                    value = coin.maxSupply
+                                )
+                            }
+                        }
+
+                        // About Section
+                        if (!coin.description.isNullOrBlank()) {
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Column(
+                                    modifier = Modifier.padding(16.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "About ${coin.name}",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        text = coin.description,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -141,104 +265,21 @@ fun CoinDetailScreen(
 }
 
 @Composable
-private fun PriceSection(coin: CoinDetail) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+private fun SupplyInfoRow(
+    label: String,
+    value: Double?
+) {
+    value?.let {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = formatPrice(coin.currentPrice),
-                style = MaterialTheme.typography.headlineMedium
+                text = label,
+                style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // 24h price change
-            PriceChangeRow(
-                percentage = coin.priceChangePercentage24h,
-                label = "24h"
-            )
-            
-            // 30d price change
-            PriceChangeRow(
-                percentage = coin.priceChangePercentage30d,
-                label = "30d"
-            )
+            Text(text = formatNumber(it))
         }
-    }
-}
-
-@Composable
-private fun PriceChangeRow(
-    percentage: Double?,
-    label: String
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(vertical = 2.dp)
-    ) {
-        val color = when {
-            percentage == null -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            percentage >= 0 -> Color(0xFF4CAF50)
-            else -> Color(0xFFE53935)
-        }
-        
-        Text(
-            text = formatPercentage(percentage),
-            color = color,
-            style = MaterialTheme.typography.bodyLarge
-        )
-        Text(
-            text = " ($label)",
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-        )
-    }
-}
-
-@Composable
-private fun MarketDataSection(coin: CoinDetail) {
-    Column {
-        Text(
-            text = "Market Data",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        MarketDataItem("Market Cap Rank", "#${coin.marketCapRank}")
-        MarketDataItem("Market Cap", formatPrice(coin.marketCap.toDouble()))
-        MarketDataItem("24h High", formatPrice(coin.high24h))
-        MarketDataItem("24h Low", formatPrice(coin.low24h))
-        MarketDataItem("Total Volume", formatPrice(coin.totalVolume))
-        coin.circulatingSupply?.let {
-            MarketDataItem("Circulating Supply", formatNumber(it))
-        }
-        coin.totalSupply?.let {
-            MarketDataItem("Total Supply", formatNumber(it))
-        }
-        coin.maxSupply?.let {
-            MarketDataItem("Max Supply", formatNumber(it))
-        }
-    }
-}
-
-@Composable
-private fun MarketDataItem(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-        )
-        Text(text = value)
     }
 }
 
@@ -256,4 +297,12 @@ private fun formatPercentage(percentage: Double?): String {
 
 private fun formatNumber(number: Double): String {
     return NumberFormat.getNumberInstance(Locale.US).format(number)
+}
+
+private fun getPercentageColor(percentage: Double?): Color {
+    return when {
+        percentage == null -> Color.Gray
+        percentage >= 0 -> Color(0xFF4CAF50)  // Green
+        else -> Color(0xFFE53935)  // Red
+    }
 } 

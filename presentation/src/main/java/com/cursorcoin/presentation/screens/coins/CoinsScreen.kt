@@ -1,83 +1,143 @@
 package com.cursorcoin.presentation.screens.coins
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.cursorcoin.domain.model.Coin
 import com.cursorcoin.presentation.navigation.Screen
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import java.text.NumberFormat
 import java.util.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoinsScreen(
-    navController: NavController,
-    viewModel: CoinsViewModel = hiltViewModel()
+    onNavigateToSettings: () -> Unit,
+    onNavigateToDetail: (String) -> Unit,
+    viewModel: CoinsViewModel = hiltViewModel(),
+    navController: NavController
 ) {
     val state by viewModel.state.collectAsState()
-    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = state.isLoading)
+    var showSelectDialog by remember { mutableStateOf(false) }
+    var selectedCoin by remember { mutableStateOf<Coin?>(null) }
 
     LaunchedEffect(key1 = Unit) {
         viewModel.handleEvent(CoinsEvent.LoadCoins)
     }
 
+    if (showSelectDialog && selectedCoin != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showSelectDialog = false
+                selectedCoin = null
+            },
+            title = { Text("Add to Portfolio?") },
+            text = {
+                Text("Would you like to add ${selectedCoin?.name} to your portfolio?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        selectedCoin?.let { coin ->
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("selected_coin_id", coin.id)
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("selected_coin_name", coin.name)
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("selected_coin_symbol", coin.symbol)
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("selected_coin_image", coin.image)
+                            navController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.set("selected_coin_price", coin.currentPrice)
+                        }
+                        navController.navigateUp()
+                        showSelectDialog = false
+                        selectedCoin = null
+                    }
+                ) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showSelectDialog = false
+                        selectedCoin = null
+                    }
+                ) {
+                    Text("No")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "CursorCoin") },
+                title = { Text("Coins") },
                 actions = {
-                    IconButton(onClick = { navController.navigate(Screen.Settings.route) }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings"
-                        )
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 }
             )
         }
     ) { paddingValues ->
-        SwipeRefresh(
-            state = swipeRefreshState,
-            onRefresh = { viewModel.handleEvent(CoinsEvent.RefreshCoins) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                when {
-                    state.error != null && state.coins.isEmpty() -> {
-                        Text(
-                            text = state.error ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-                    state.coins.isNotEmpty() -> {
-                        LazyColumn {
-                            items(state.coins) { coin ->
-                                CoinListItem(coin = coin, navController = navController)
+            if (state.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (state.error != null) {
+                Text(
+                    text = state.error?.let { "Error: $it" } ?: "Unknown error",
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .align(Alignment.Center)
+                )
+            } else if (state.coins.isEmpty()) {
+                Text(
+                    text = "No coins available",
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(state.coins) { coin ->
+                        CoinItem(
+                            coin = coin,
+                            onItemClick = { onNavigateToDetail(coin.id) },
+                            onLongClick = {
+                                selectedCoin = coin
+                                showSelectDialog = true
                             }
-                        }
-                    }
-                    !state.isLoading -> {
-                        Text(
-                            text = "No coins available",
-                            modifier = Modifier.align(Alignment.Center)
                         )
                     }
                 }
@@ -86,51 +146,50 @@ fun CoinsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun CoinListItem(
+fun CoinItem(
     coin: Coin,
-    navController: NavController
+    onItemClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = {
-            navController.navigate(Screen.CoinDetail.createRoute(coin.id))
-        }
+            .clickable(onClick = onItemClick)
+            .combinedClickable(
+                onClick = onItemClick,
+                onLongClick = onLongClick
+            )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = coin.image,
-                contentDescription = coin.name,
-                modifier = Modifier.size(40.dp)
-            )
-            
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(
-                modifier = Modifier.weight(1f)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = coin.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                AsyncImage(
+                    model = coin.image,
+                    contentDescription = coin.name,
+                    modifier = Modifier.size(32.dp)
                 )
-                Text(
-                    text = coin.symbol.uppercase(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
+                Column {
+                    Text(
+                        text = coin.name,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = coin.symbol.uppercase(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
             }
-            
             Column(
                 horizontalAlignment = Alignment.End
             ) {

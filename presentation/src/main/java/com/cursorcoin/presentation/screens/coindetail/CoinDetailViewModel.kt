@@ -1,11 +1,12 @@
 package com.cursorcoin.presentation.screens.coindetail
 
 import com.cursorcoin.core.BaseViewModel
-import com.cursorcoin.domain.model.CoinDetail
-import com.cursorcoin.domain.model.CoinHistory
+import com.cursorcoin.core.Resource
 import com.cursorcoin.domain.usecase.GetCoinDetailUseCase
 import com.cursorcoin.domain.usecase.GetCoinHistoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.onStart
 import javax.inject.Inject
 
 @HiltViewModel
@@ -18,56 +19,67 @@ class CoinDetailViewModel @Inject constructor(
 
     override fun handleEvent(event: CoinDetailEvent) {
         when (event) {
-            is CoinDetailEvent.LoadCoinDetail -> {
-                loadCoinDetail(event.coinId)
-                loadCoinHistory(event.coinId)
-            }
-            is CoinDetailEvent.RefreshData -> {
-                loadCoinDetail(event.coinId)
-                loadCoinHistory(event.coinId, forceRefresh = true)
-            }
+            is CoinDetailEvent.LoadCoinDetail -> loadCoinDetail(event.coinId)
         }
     }
 
     private fun loadCoinDetail(coinId: String) {
         launch {
             getCoinDetailUseCase(coinId)
+                .onStart { setState { copy(isLoading = true) } }
                 .collect { result ->
-                    setState {
-                        copy(
-                            coinDetail = result.data,
-                            isLoading = result is com.cursorcoin.core.Resource.Loading,
-                            error = if (result is com.cursorcoin.core.Resource.Error) result.message else null
-                        )
+                    when (result) {
+                        is Resource.Success -> {
+                            setState {
+                                copy(
+                                    coinDetail = result.data,
+                                    isLoading = false,
+                                    error = null
+                                )
+                            }
+                            loadCoinHistory(coinId)
+                        }
+                        is Resource.Error -> {
+                            setState {
+                                copy(
+                                    isLoading = false,
+                                    error = result.message
+                                )
+                            }
+                        }
+                        is Resource.Loading -> {
+                            setState {
+                                copy(isLoading = true)
+                            }
+                        }
                     }
                 }
         }
     }
 
-    private fun loadCoinHistory(coinId: String, forceRefresh: Boolean = false) {
+    private fun loadCoinHistory(coinId: String) {
         launch {
-            getCoinHistoryUseCase(GetCoinHistoryUseCase.Params(coinId, forceRefresh))
+            getCoinHistoryUseCase(GetCoinHistoryUseCase.Params(coinId))
                 .collect { result ->
-                    setState {
-                        copy(
-                            priceHistory = result.data ?: emptyList(),
-                            isLoading = result is com.cursorcoin.core.Resource.Loading,
-                            error = if (result is com.cursorcoin.core.Resource.Error) result.message else null
-                        )
+                    when (result) {
+                        is Resource.Success -> {
+                            setState {
+                                copy(
+                                    priceHistory = result.data ?: emptyList(),
+                                    error = null
+                                )
+                            }
+                        }
+                        is Resource.Error -> {
+                            setState {
+                                copy(error = result.message)
+                            }
+                        }
+                        is Resource.Loading -> {
+                            // Already showing loading state from detail
+                        }
                     }
                 }
         }
     }
-}
-
-data class CoinDetailState(
-    val coinDetail: CoinDetail? = null,
-    val priceHistory: List<CoinHistory> = emptyList(),
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
-
-sealed class CoinDetailEvent {
-    data class LoadCoinDetail(val coinId: String) : CoinDetailEvent()
-    data class RefreshData(val coinId: String) : CoinDetailEvent()
 } 

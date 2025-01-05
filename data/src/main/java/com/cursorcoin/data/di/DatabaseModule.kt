@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.cursorcoin.data.local.AppDatabase
 import com.cursorcoin.data.local.dao.CoinDao
+import com.cursorcoin.data.local.dao.CoinHistoryDao
+import com.cursorcoin.data.local.dao.PortfolioDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,12 +24,20 @@ object DatabaseModule {
     ): AppDatabase = Room.databaseBuilder(
         context,
         AppDatabase::class.java,
-        "cursor_coin_db"
+        "cursor_coin.db"
     )
-        .fallbackToDestructiveMigration()
-        .build()
+    .addMigrations(AppDatabase.MIGRATION_1_2)
+    .build()
 
     @Provides
     @Singleton
     fun provideCoinDao(database: AppDatabase): CoinDao = database.coinDao()
+
+    @Provides
+    @Singleton
+    fun provideCoinHistoryDao(database: AppDatabase): CoinHistoryDao = database.coinHistoryDao()
+
+    @Provides
+    @Singleton
+    fun providePortfolioDao(database: AppDatabase): PortfolioDao = database.portfolioDao()
 } 
